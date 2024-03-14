@@ -27,6 +27,7 @@ class Slidable extends StatefulWidget {
     this.direction = Axis.horizontal,
     this.dragStartBehavior = DragStartBehavior.down,
     this.useTextDirection = true,
+    this.gestureAreaWidthPercentage = 1,
     required this.child,
   }) : super(key: key);
 
@@ -100,6 +101,10 @@ class Slidable extends StatefulWidget {
   ///
   /// {@macro flutter.widgets.ProxyWidget.child}
   final Widget child;
+
+  /// Which part of the widget responds to gestures.
+  /// Default value 1 - the entire widget responds to gestures
+  final double gestureAreaWidthPercentage;
 
   @override
   _SlidableState createState() => _SlidableState();
@@ -258,6 +263,7 @@ class _SlidableState extends State<Slidable>
       controller: controller,
       direction: widget.direction,
       dragStartBehavior: widget.dragStartBehavior,
+      gestureAreaWidthPercentage: widget.gestureAreaWidthPercentage,
       child: SlidableNotificationSender(
         tag: widget.groupTag,
         controller: controller,

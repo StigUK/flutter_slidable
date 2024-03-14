@@ -14,12 +14,14 @@ class SlidableGestureDetector extends StatefulWidget {
     required this.direction,
     required this.child,
     this.dragStartBehavior = DragStartBehavior.start,
+    this.gestureAreaWidthPercentage = 1,
   }) : super(key: key);
 
   final SlidableController controller;
   final Widget child;
   final Axis direction;
   final bool enabled;
+  final double gestureAreaWidthPercentage;
 
   /// Determines the way that drag start behavior is handled.
   ///
@@ -47,6 +49,7 @@ class _SlidableGestureDetectorState extends State<SlidableGestureDetector> {
   double dragExtent = 0;
   late Offset startPosition;
   late Offset lastPosition;
+  late BoxConstraints constraints;
 
   bool get directionIsXAxis {
     return widget.direction == Axis.horizontal;
@@ -56,16 +59,21 @@ class _SlidableGestureDetectorState extends State<SlidableGestureDetector> {
   Widget build(BuildContext context) {
     final canDragHorizontally = directionIsXAxis && widget.enabled;
     final canDragVertically = !directionIsXAxis && widget.enabled;
-    return GestureDetector(
-      onHorizontalDragStart: canDragHorizontally ? handleDragStart : null,
-      onHorizontalDragUpdate: canDragHorizontally ? handleDragUpdate : null,
-      onHorizontalDragEnd: canDragHorizontally ? handleDragEnd : null,
-      onVerticalDragStart: canDragVertically ? handleDragStart : null,
-      onVerticalDragUpdate: canDragVertically ? handleDragUpdate : null,
-      onVerticalDragEnd: canDragVertically ? handleDragEnd : null,
-      behavior: HitTestBehavior.opaque,
-      dragStartBehavior: widget.dragStartBehavior,
-      child: widget.child,
+    return LayoutBuilder(
+      builder: (BuildContext context, BoxConstraints _constraints) {
+        constraints = _constraints;
+        return GestureDetector(
+          onHorizontalDragStart: canDragHorizontally ? handleDragStart : null,
+          onHorizontalDragUpdate: canDragHorizontally ? handleDragUpdate : null,
+          onHorizontalDragEnd: canDragHorizontally ? handleDragEnd : null,
+          onVerticalDragStart: canDragVertically ? handleDragStart : null,
+          onVerticalDragUpdate: canDragVertically ? handleDragUpdate : null,
+          onVerticalDragEnd: canDragVertically ? handleDragEnd : null,
+          behavior: HitTestBehavior.opaque,
+          dragStartBehavior: widget.dragStartBehavior,
+          child: widget.child,
+        );
+      },
     );
   }
 
@@ -76,6 +84,9 @@ class _SlidableGestureDetectorState extends State<SlidableGestureDetector> {
 
   void handleDragStart(DragStartDetails details) {
     startPosition = details.localPosition;
+    if (!_isGestureAllowed) {
+      return;
+    }
     lastPosition = startPosition;
     dragExtent = dragExtent.sign *
         overallDragAxisExtent *
@@ -84,6 +95,9 @@ class _SlidableGestureDetectorState extends State<SlidableGestureDetector> {
   }
 
   void handleDragUpdate(DragUpdateDetails details) {
+    if (!_isGestureAllowed) {
+      return;
+    }
     final delta = details.primaryDelta!;
     dragExtent += delta;
     lastPosition = details.localPosition;
@@ -91,6 +105,9 @@ class _SlidableGestureDetectorState extends State<SlidableGestureDetector> {
   }
 
   void handleDragEnd(DragEndDetails details) {
+    if (!_isGestureAllowed) {
+      return;
+    }
     final delta = lastPosition - startPosition;
     final primaryDelta = directionIsXAxis ? delta.dx : delta.dy;
     final gestureDirection =
@@ -100,5 +117,13 @@ class _SlidableGestureDetectorState extends State<SlidableGestureDetector> {
       details.primaryVelocity,
       gestureDirection,
     );
+  }
+
+  bool get _isGestureAllowed {
+    if (startPosition.dx >
+        constraints.biggest.width * widget.gestureAreaWidthPercentage) {
+      return false;
+    }
+    return true;
   }
 }
